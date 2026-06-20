@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="refresh" content="20">
+<title>Contender Race Vol. 1 — Live</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #070707; --surface: #0f0f0f; --panel: #141414;
+    --border: #1e1e1e; --text: #f0f0f0; --muted: #444;
+    --accent: #e63946; --gold: #f5c542; --silver: #b0bec5; --bronze: #cd7f32;
+  }
+  html, body { background: var(--bg); color: var(--text); font-family: 'Barlow', sans-serif; min-height: 100vh; }
+
+  /* HEADER */
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.25rem 2rem; border-bottom: 2px solid var(--accent);
+    background: var(--surface);
+  }
+  .brand-name { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 2rem; letter-spacing: 0.06em; text-transform: uppercase; }
+  .brand-sub  { font-family: 'Barlow Condensed', sans-serif; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.2em; color: var(--accent); text-transform: uppercase; }
+  .header-stats { display: flex; gap: 2rem; }
+  .stat { display: flex; flex-direction: column; align-items: center; }
+  .stat .val { font-family: 'Barlow Condensed', sans-serif; font-size: 2rem; font-weight: 800; line-height: 1; }
+  .stat .lbl { font-size: 0.6rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); }
+  .last-update { font-family: 'Barlow Condensed', sans-serif; font-size: 0.65rem; letter-spacing: 0.1em; color: var(--muted); text-transform: uppercase; margin-top: 0.2rem; }
+
+  /* CAT TABS */
+  .cat-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); background: var(--surface); padding: 0 2rem; }
+  .cat-tab {
+    background: none; border: none; color: var(--muted);
+    font-family: 'Barlow Condensed', sans-serif; font-size: 0.9rem; font-weight: 700;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    padding: 0.75rem 1.5rem 0.65rem; cursor: pointer;
+    border-bottom: 3px solid transparent; margin-bottom: -1px;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .cat-tab.active { color: var(--text); border-bottom-color: var(--accent); }
+
+  /* MAIN */
+  .main { padding: 2rem; max-width: 900px; margin: 0 auto; }
+
+  /* PODIUM */
+  .podium-section { margin-bottom: 2.5rem; }
+  .section-label { font-family: 'Barlow Condensed', sans-serif; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); margin-bottom: 1rem; }
+  .podium { display: grid; grid-template-columns: 1fr 1.1fr 1fr; gap: 0.75rem; align-items: end; }
+  .podium-slot {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+    padding: 1.5rem 1rem 1.25rem; text-align: center;
+    display: flex; flex-direction: column; align-items: center; gap: 0.4rem;
+  }
+  .podium-slot.p1 { border-top: 3px solid var(--gold); padding-top: 2rem; }
+  .podium-slot.p2 { order: 1; border-top: 3px solid var(--silver); }
+  .podium-slot.p3 { order: 3; border-top: 3px solid var(--bronze); }
+  .podium-medal  { font-size: 2rem; line-height: 1; }
+  .podium-alias  { font-family: 'Barlow Condensed', sans-serif; font-size: 1.3rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; }
+  .podium-name   { font-size: 0.72rem; color: var(--muted); }
+  .podium-time   { font-family: 'Barlow Condensed', sans-serif; font-size: 1.5rem; font-weight: 700; color: var(--accent); margin-top: 0.2rem; }
+  .podium-heat   { font-family: 'Barlow Condensed', sans-serif; font-size: 0.6rem; font-weight: 700; letter-spacing: 0.1em; padding: 0.15rem 0.4rem; border-radius: 3px; }
+
+  /* TABLE */
+  .lb-wrap { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .lb-row { display: grid; grid-template-columns: 48px 1fr repeat(8, 56px) 72px; align-items: center; padding: 0.65rem 1rem; border-bottom: 1px solid var(--border); gap: 0.5rem; }
+  .lb-row:last-child { border-bottom: none; }
+  .lb-row.lb-header { background: var(--surface); }
+  .lb-rank { font-family: 'Barlow Condensed', sans-serif; font-size: 1rem; font-weight: 700; text-align: center; color: var(--muted); }
+  .lb-rank.r1 { color: var(--gold); font-size: 1.2rem; }
+  .lb-rank.r2 { color: var(--silver); font-size: 1.1rem; }
+  .lb-rank.r3 { color: var(--bronze); }
+  .lb-athlete .name  { font-size: 0.92rem; font-weight: 600; }
+  .lb-athlete .alias { font-size: 0.68rem; color: var(--muted); }
+  .lb-station { font-family: 'Barlow Condensed', sans-serif; font-size: 0.88rem; font-weight: 600; text-align: center; color: var(--text); }
+  .lb-station.empty { color: var(--muted); }
+  .lb-total { font-family: 'Barlow Condensed', sans-serif; font-size: 1rem; font-weight: 700; text-align: right; color: var(--accent); }
+  .lb-total.incomplete { color: var(--muted); font-size: 0.72rem; }
+  .col-header { font-family: 'Barlow Condensed', sans-serif; font-size: 0.58rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); text-align: center; }
+  .col-header.left { text-align: left; }
+  .col-header.right { text-align: right; }
+
+  /* HEAT BADGE inline */
+  .hb { font-family: 'Barlow Condensed', sans-serif; font-size: 0.58rem; font-weight: 700; letter-spacing: 0.08em; padding: 0.1rem 0.3rem; border-radius: 2px; }
+
+  /* CAT BADGE */
+  .cb { font-family: 'Barlow Condensed', sans-serif; font-size: 0.58rem; font-weight: 700; padding: 0.1rem 0.3rem; border-radius: 2px; }
+  .cat-H  { background: rgba(0,180,216,0.12); color: #00b4d8; }
+  .cat-M  { background: rgba(255,100,180,0.12); color: #ff64b4; }
+  .cat-MX { background: rgba(140,203,122,0.12); color: #8ecb7a; }
+
+  .empty-state { text-align: center; padding: 4rem 1rem; color: var(--muted); }
+  .empty-state strong { display: block; font-family: 'Barlow Condensed', sans-serif; font-size: 1.5rem; color: var(--border); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.5rem; }
+
+  @media (max-width: 700px) {
+    .header { padding: 1rem; }
+    .brand-name { font-size: 1.4rem; }
+    .main { padding: 1rem; }
+    .lb-row { grid-template-columns: 36px 1fr repeat(4, 44px) 60px; }
+    .lb-row .lb-station:nth-child(n+7) { display: none; }
+    .lb-row .col-header:nth-child(n+7) { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div>
+    <div class="brand-name">Contender Race</div>
+    <div class="brand-sub">Vol. 1 · Resultados en vivo</div>
+    <div class="last-update" id="lastUpdate">—</div>
+  </div>
+  <div class="header-stats">
+    <div class="stat"><span class="val" id="statAthletes">—</span><span class="lbl">Atletas</span></div>
+    <div class="stat"><span class="val" id="statComplete">—</span><span class="lbl">Finalizados</span></div>
+  </div>
+</header>
+
+<div class="cat-tabs">
+  <button class="cat-tab active" onclick="setCat('H',this)">Hombre</button>
+  <button class="cat-tab" onclick="setCat('M',this)">Mujer</button>
+  <button class="cat-tab" onclick="setCat('MX',this)">Mixto</button>
+</div>
+
+<div class="main">
+  <div id="podiumSection" style="display:none">
+    <p class="section-label">Podio</p>
+    <div class="podium" id="podium"></div>
+    <br>
+  </div>
+  <p class="section-label">Clasificación general</p>
+  <div id="leaderboard"><div class="empty-state"><strong>En espera</strong>Los resultados aparecerán aquí.</div></div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://ktfwkbaxjmpvtdbjzwdg.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt0ZndrYmF4am1wdnRkYmp6d2RnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3MzU1OTksImV4cCI6MjA5NzMxMTU5OX0.sLj3a9JEqvdPWuPLO9AoH6TUBoLxRAYxLT0NI87HDDU';
+const HDR = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY };
+const STATIONS = ['Soga','Remo','Trineo','Burpee','Marcha','Desplante','Wall Ball'];
+const HEATS = Array.from({length:12},(_,i)=>{
+  const l=String.fromCharCode(65+i), t=8*60+i*30;
+  return {letter:l,label:'H-'+l,time:String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0')};
+});
+function heatInfo(l){return HEATS.find(h=>h.letter===l)||{label:'H-'+l,time:''};}
+function heatColor(l){const c=['#00b4d8','#7b2fff','#ff9f1c','#e63946','#8ecb7a','#f5c542','#ff64b4','#00c896','#ff4500','#8888ff','#c0c0c0','#ffcc00'];return c[(l.charCodeAt(0)-65)%c.length];}
+function catLabel(c){return c==='H'?'Hombre':c==='M'?'Mujer':'Mixto';}
+function displayName(a){ if(a.cat==='MX') return a.equipo||a.alias||a.nombre; return a.nombre; }
+function displaySub(a){ if(a.cat==='MX'){const m=[a.nombre,a.nombre2].filter(Boolean).join(' · ');return m||a.alias;} return a.alias; }
+function fmtTime(s){if(!s&&s!==0)return'—';return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
+function athleteTotal(id,timesMap){
+  const t=timesMap[id]||{};let sum=0,count=0;
+  for(let i=0;i<STATIONS.length;i++){if(t[i]>0){sum+=t[i];count++;}}
+  return{sum,count,complete:count===STATIONS.length};
+}
+
+let currentCat = 'H';
+function setCat(val,btn){
+  currentCat=val;
+  document.querySelectorAll('.cat-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  render(window._athletes||[], window._timesMap||{});
+}
+
+async function load(){
+  try{
+    const [ath,tms]=await Promise.all([
+      fetch(SUPABASE_URL+'/rest/v1/athletes?select=*&order=created_at.asc',{headers:HDR}).then(r=>r.json()),
+      fetch(SUPABASE_URL+'/rest/v1/times?select=*',{headers:HDR}).then(r=>r.json())
+    ]);
+    const timesMap={};
+    (tms||[]).forEach(r=>{if(!timesMap[r.athlete_id])timesMap[r.athlete_id]={};timesMap[r.athlete_id][r.station]=r.seconds;});
+    window._athletes=ath||[];
+    window._timesMap=timesMap;
+    render(ath||[],timesMap);
+    document.getElementById('statAthletes').textContent=(ath||[]).length;
+    document.getElementById('statComplete').textContent=(ath||[]).filter(a=>athleteTotal(a.id,timesMap).complete).length;
+    const now=new Date();
+    document.getElementById('lastUpdate').textContent='Actualizado '+String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0')+':'+String(now.getSeconds()).padStart(2,'0');
+  }catch(e){console.error(e);}
+}
+
+function render(athletes,timesMap){
+  let pool=athletes.map(a=>({...a,...athleteTotal(a.id,timesMap),times:timesMap[a.id]||{}}));
+  pool=pool.filter(a=>a.cat===currentCat);
+  pool.sort((a,b)=>{
+    if(a.complete&&b.complete)return a.sum-b.sum;
+    if(a.complete)return-1;if(b.complete)return 1;
+    return b.count-a.count;
+  });
+
+  const lb=document.getElementById('leaderboard');
+  const ps=document.getElementById('podiumSection');
+  if(!pool.length){lb.innerHTML='<div class="empty-state"><strong>En espera</strong>Los resultados aparecerán aquí.</div>';ps.style.display='none';return;}
+
+  // Podium
+  const top3=pool.filter(r=>r.complete).slice(0,3);
+  if(top3.length>=2){
+    ps.style.display='block';
+    const medals=['🥇','🥈','🥉'];
+    const order=top3.length>=3?[1,0,2]:[0,1];
+    const slots=top3.length>=3?['p2','p1','p3']:['p2','p1'];
+    document.getElementById('podium').innerHTML=order.map((ri,si)=>{
+      const r=top3[ri];if(!r)return'';
+      const hc=heatColor(r.heat),hi=heatInfo(r.heat);
+      return`<div class="podium-slot ${slots[si]}">
+        <span class="podium-medal">${medals[ri]}</span>
+        <span class="podium-alias">${displayName(r)}</span>
+        <span class="podium-name">${displaySub(r)}</span>
+        <span class="podium-heat hb" style="background:${hc}22;color:${hc}">${hi.label} ${hi.time}</span>
+        <span class="cb cat-${r.cat}">${catLabel(r.cat)}</span>
+        <span class="podium-time">${fmtTime(r.sum)}</span>
+      </div>`;
+    }).join('');
+  }else{ps.style.display='none';}
+
+  // Table header
+  const stationHeaders = STATIONS.map(s=>`<div class="col-header">${s.substring(0,4)}</div>`).join('');
+  let html=`<div class="lb-wrap">
+    <div class="lb-row lb-header">
+      <div class="col-header">#</div>
+      <div class="col-header left">Atleta</div>
+      ${stationHeaders}
+      <div class="col-header right">Total</div>
+    </div>`;
+
+  html+=pool.map((r,i)=>{
+    const rank=i+1;
+    const rankClass=rank<=3&&r.complete?'r'+rank:'';
+    const rankLabel=rank<=3&&r.complete?['🥇','🥈','🥉'][rank-1]:rank;
+    const hc=heatColor(r.heat),hi=heatInfo(r.heat);
+    const stationCells=STATIONS.map((_,si)=>{
+      const v=r.times[si];
+      return v>0?`<div class="lb-station">${fmtTime(v)}</div>`:`<div class="lb-station empty">—</div>`;
+    }).join('');
+    const totalDisplay=r.complete
+      ?`<div class="lb-total">${fmtTime(r.sum)}</div>`
+      :`<div class="lb-total incomplete">${r.count}/${STATIONS.length}</div>`;
+    return`<div class="lb-row">
+      <div class="lb-rank ${rankClass}">${rankLabel}</div>
+      <div class="lb-athlete">
+        <div class="name">${displayName(r)}</div>
+        <div class="alias">${displaySub(r)} &nbsp;<span class="hb" style="background:${hc}22;color:${hc}">${hi.label}</span> <span class="cb cat-${r.cat}">${catLabel(r.cat)}</span></div>
+      </div>
+      ${stationCells}
+      ${totalDisplay}
+    </div>`;
+  }).join('');
+  html+='</div>';
+  lb.innerHTML=html;
+}
+
+load();
+setInterval(load, 20000);
+</script>
+</body>
+</html>

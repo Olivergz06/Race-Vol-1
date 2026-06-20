@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contender Race — Admin</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0a0a0a; --surface: #111; --panel: #181818;
+    --border: #252525; --border2: #2f2f2f; --text: #f0f0f0; --muted: #555;
+    --accent: #e63946; --accent2: #ff6b6b; --gold: #f5c542; --silver: #b0bec5; --bronze: #cd7f32;
+  }
+  html, body { background: var(--bg); color: var(--text); font-family: 'Barlow', sans-serif; min-height: 100vh; }
+
+  /* PIN SCREEN */
+  .pin-screen {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 100vh; padding: 2rem; gap: 1.5rem;
+  }
+  .pin-title { font-family: 'Barlow Condensed', sans-serif; font-size: 1.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; }
+  .pin-sub   { font-size: 0.8rem; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+  .pin-input {
+    background: var(--surface); border: 2px solid var(--border2); border-radius: 8px;
+    color: var(--text); font-family: 'Barlow Condensed', sans-serif; font-size: 2rem;
+    font-weight: 700; letter-spacing: 0.5em; outline: none; padding: 0.75rem 1.5rem;
+    text-align: center; width: 180px; transition: border-color 0.15s;
+  }
+  .pin-input:focus { border-color: var(--accent); }
+  .pin-input.error { border-color: var(--accent); animation: shake 0.3s; }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+  .pin-btn {
+    background: var(--accent); border: none; border-radius: 6px; color: #fff; cursor: pointer;
+    font-family: 'Barlow Condensed', sans-serif; font-size: 1rem; font-weight: 700;
+    letter-spacing: 0.1em; padding: 0.65rem 2rem; text-transform: uppercase;
+  }
+  .pin-err { color: var(--accent); font-size: 0.8rem; min-height: 1.2em; }
+
+  /* APP */
+  #app { display: none; }
+
+  /* HEADER */
+  .site-header {
+    background: var(--surface); border-bottom: 2px solid var(--accent);
+    padding: 0.75rem 1.5rem; display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .brand { display: flex; flex-direction: column; line-height: 1; }
+  .brand-name { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 1.4rem; letter-spacing: 0.04em; text-transform: uppercase; }
+  .brand-sub  { font-family: 'Barlow Condensed', sans-serif; font-size: 0.65rem; font-weight: 600; letter-spacing: 0.18em; color: var(--accent); text-transform: uppercase; }
+  .header-right { display: flex; align-items: center; gap: 1.2rem; }
+  .stat-pill { display: flex; flex-direction: column; align-items: center; line-height: 1; }
+  .stat-pill .val { font-family: 'Barlow Condensed', sans-serif; font-size: 1.4rem; font-weight: 700; }
+  .stat-pill .lbl { font-size: 0.6rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex-shrink: 0; transition: background 0.3s; }
+  .sync-dot.ok   { background: #4caf50; }
+  .sync-dot.busy { background: var(--gold); }
+  .sync-dot.err  { background: var(--accent); }
+
+  /* TABS */
+  .tabs { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 1.5rem; }
+  .tab-btn {
+    background: none; border: none; color: var(--muted);
+    font-family: 'Barlow Condensed', sans-serif; font-size: 0.85rem; font-weight: 600;
+    letter-spacing: 0.1em; text-transform: uppercase; padding: 0.7rem 1.2rem 0.6rem;
+    cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color 0.15s, border-color 0.15s;
+  }
+  .tab-btn.active { color: var(--text); border-bottom-color: var(--accent); }
+
+  .view { display: none; padding: 1.5rem; }
+  .view.active { display: block; }
+  .section-title { font-family: 'Barlow Condensed', sans-serif; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.75rem; }
+
+  /* FORM */
+  .register-card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem; margin-bottom: 1.5rem; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem; }
+  .form-group { display: flex; flex-direction: column; gap: 0.3rem; }
+  .form-group label { font-size: 0.65rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  .form-group input, .form-group select {
+    background: var(--surface); border: 1px solid var(--border2); border-radius: 5px;
+    color: var(--text); font-family: 'Barlow', sans-serif; font-size: 0.9rem;
+    padding: 0.55rem 0.75rem; outline: none; transition: border-color 0.15s; -webkit-appearance: none;
+  }
+  .form-group input:focus, .form-group select:focus { border-color: var(--accent); }
+  .form-group select option { background: #1a1a1a; }
+  .btn-primary {
+    background: var(--accent); border: none; border-radius: 5px; color: #fff; cursor: pointer;
+    font-family: 'Barlow Condensed', sans-serif; font-size: 0.9rem; font-weight: 700;
+    letter-spacing: 0.08em; padding: 0.6rem 1.5rem; text-transform: uppercase;
+    transition: background 0.15s; width: 100%;
+  }
+  .btn-primary:hover { background: var(--accent2); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* BADGES */
+  .heat-badge { font-family: 'Barlow Condensed', sans-serif; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.08em; padding: 0.2rem 0.55rem; border-radius: 3px; text-transform: uppercase; white-space: nowrap; }
+  .cat-badge  { font-family: 'Barlow Condensed', sans-serif; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.06em; padding: 0.2rem 0.45rem; border-radius: 3px; text-transform: uppercase; }
+  .cat-H  { background: rgba(0,180,216,0.12); color: #00b4d8; }
+  .cat-M  { background: rgba(255,100,180,0.12); color: #ff64b4; }
+  .cat-MX { background: rgba(140,203,122,0.12); color: #8ecb7a; }
+
+  /* ATHLETE LIST */
+  .athlete-row { display: grid; grid-template-columns: 24px 1fr auto auto auto; align-items: center; gap: 0.6rem; background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 0.65rem 0.9rem; margin-bottom: 0.4rem; }
+  .athlete-num { font-family: 'Barlow Condensed', sans-serif; font-size: 0.75rem; font-weight: 700; color: var(--muted); text-align: center; }
+  .a-name  { font-size: 0.9rem; font-weight: 600; }
+  .a-alias { font-size: 0.72rem; color: var(--muted); }
+  .btn-icon { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 1rem; padding: 0.2rem; transition: color 0.15s; }
+  .btn-icon:hover { color: var(--accent); }
+
+  /* EDIT MODAL */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 200; align-items: center; justify-content: center; padding: 1.5rem; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--panel); border: 1px solid var(--border2); border-radius: 10px; padding: 1.25rem; width: 100%; max-width: 420px; }
+  .modal-title { font-family: 'Barlow Condensed', sans-serif; font-size: 1rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 1rem; }
+  .modal-actions { display: flex; gap: 0.5rem; margin-top: 1rem; }
+  .btn-secondary { background: var(--surface); border: 1px solid var(--border2); border-radius: 5px; color: var(--text); cursor: pointer; font-family: 'Barlow Condensed', sans-serif; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.06em; padding: 0.55rem 1rem; text-transform: uppercase; flex: 1; }
+
+  /* TIME BLOCKS */
+  .heat-group-header { display: flex; align-items: center; gap: 0.75rem; margin: 1.25rem 0 0.5rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border); }
+  .heat-group-header:first-child { margin-top: 0; }
+  .heat-group-time { font-family: 'Barlow Condensed', sans-serif; font-size: 0.75rem; color: var(--muted); letter-spacing: 0.06em; }
+  .athlete-block { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 0.6rem; overflow: hidden; }
+  .athlete-block-header { display: flex; align-items: center; gap: 0.65rem; padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); cursor: pointer; user-select: none; }
+  .ab-name  { font-family: 'Barlow Condensed', sans-serif; font-size: 1rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; flex: 1; }
+  .ab-alias { font-size: 0.7rem; color: var(--muted); }
+  .total-time { font-family: 'Barlow Condensed', sans-serif; font-size: 1rem; font-weight: 700; color: var(--accent); letter-spacing: 0.04em; min-width: 52px; text-align: right; }
+  .total-time.complete { color: var(--gold); }
+  .chevron { color: var(--muted); font-size: 0.8rem; transition: transform 0.2s; }
+  .athlete-block.open .chevron { transform: rotate(180deg); }
+  .station-grid { display: none; grid-template-columns: 1fr 1fr; gap: 0.5rem; padding: 0.75rem 1rem; }
+  .athlete-block.open .station-grid { display: grid; }
+  .station-cell { display: flex; flex-direction: column; gap: 0.2rem; }
+  .station-label { font-size: 0.6rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  .time-input-wrap { display: flex; align-items: center; gap: 0.3rem; background: var(--surface); border: 1px solid var(--border2); border-radius: 4px; padding: 0.3rem 0.5rem; transition: border-color 0.15s; }
+  .time-input-wrap:focus-within { border-color: var(--accent); }
+  .time-field { background: none; border: none; color: var(--text); font-family: 'Barlow Condensed', sans-serif; font-size: 1rem; font-weight: 600; outline: none; width: 36px; text-align: center; }
+  .time-sep { color: var(--muted); font-family: 'Barlow Condensed', sans-serif; font-size: 0.9rem; }
+
+  .empty { text-align: center; padding: 3rem 1rem; color: var(--muted); font-size: 0.88rem; }
+  .empty strong { display: block; font-family: 'Barlow Condensed', sans-serif; font-size: 1.1rem; color: var(--border2); margin-bottom: 0.3rem; text-transform: uppercase; letter-spacing: 0.08em; }
+
+  .toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--accent); color: #fff; font-family: 'Barlow Condensed', sans-serif; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.55rem 1.25rem; border-radius: 5px; transition: transform 0.3s ease; z-index: 999; pointer-events: none; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  @media (max-width: 480px) {
+    .site-header { padding: 0.6rem 1rem; }
+    .view { padding: 1rem; }
+    .form-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- PIN -->
+<div class="pin-screen" id="pinScreen">
+  <div>
+    <div class="brand-name" style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:1.8rem;letter-spacing:0.06em;text-transform:uppercase;text-align:center">Contender Race</div>
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.7rem;font-weight:600;letter-spacing:0.2em;color:#e63946;text-transform:uppercase;text-align:center;margin-top:2px">Admin</div>
+  </div>
+  <p class="pin-sub">Ingresa el PIN de acceso</p>
+  <input class="pin-input" type="password" id="pinInput" maxlength="6" inputmode="numeric" placeholder="···" onkeydown="if(event.key==='Enter')checkPin()">
+  <button class="pin-btn" onclick="checkPin()">Entrar</button>
+  <p class="pin-err" id="pinErr"></p>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header class="site-header">
+    <div class="brand">
+      <span class="brand-name">Contender Race</span>
+      <span class="brand-sub">Admin · Vol. 1</span>
+    </div>
+    <div class="header-right">
+      <div class="stat-pill"><span class="val" id="statAthletes">—</span><span class="lbl">Atletas</span></div>
+      <div class="stat-pill"><span class="val" id="statComplete">—</span><span class="lbl">Completos</span></div>
+      <div class="sync-dot" id="syncDot"></div>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('registro')">Registro</button>
+    <button class="tab-btn" onclick="switchTab('tiempos')">Tiempos</button>
+  </div>
+
+  <!-- REGISTRO -->
+  <div id="tab-registro" class="view active">
+    <div class="register-card">
+      <p class="section-title">Nuevo atleta</p>
+      <div class="form-grid">
+        <div class="form-group"><label>Nombre completo</label><input type="text" id="inNombre" placeholder="Ej. Carlos Mendoza" autocomplete="off"></div>
+        <div class="form-group"><label>Alias / Apodo</label><input type="text" id="inAlias" placeholder="Ej. El Tanque" autocomplete="off"></div>
+        <div class="form-group"><label>Heat</label><select id="inHeat"><option value="">— selecciona —</option></select></div>
+        <div class="form-group"><label>Categoría</label>
+          <select id="inCat" onchange="toggleMixedFields()">
+            <option value="">— selecciona —</option>
+            <option value="H">Hombre</option>
+            <option value="M">Mujer</option>
+            <option value="MX">Mixto</option>
+          </select>
+        </div>
+        <div class="form-group" id="grpEquipo" style="display:none"><label>Nombre del equipo</label><input type="text" id="inEquipo" placeholder="Ej. Los Truenos" autocomplete="off"></div>
+        <div class="form-group" id="grpNombre2" style="display:none"><label>Segundo integrante</label><input type="text" id="inNombre2" placeholder="Ej. Ana López" autocomplete="off"></div>
+      </div>
+      <button class="btn-primary" id="btnRegister" onclick="registerAthlete()">＋ Registrar atleta</button>
+    </div>
+    <p class="section-title">Inscritos</p>
+    <div id="athleteList"><div class="empty"><strong>Cargando...</strong></div></div>
+  </div>
+
+  <!-- TIEMPOS -->
+  <div id="tab-tiempos" class="view">
+    <p class="section-title">Captura de tiempos (MM:SS)</p>
+    <div id="timeBlocks"><div class="empty"><strong>Cargando...</strong></div></div>
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <p class="modal-title">Editar atleta</p>
+    <div class="form-grid">
+      <div class="form-group"><label>Nombre completo</label><input type="text" id="editNombre" autocomplete="off"></div>
+      <div class="form-group"><label>Alias</label><input type="text" id="editAlias" autocomplete="off"></div>
+      <div class="form-group"><label>Heat</label><select id="editHeat"></select></div>
+      <div class="form-group"><label>Categoría</label>
+        <select id="editCat" onchange="toggleEditMixedFields()">
+          <option value="H">Hombre</option>
+          <option value="M">Mujer</option>
+          <option value="MX">Mixto</option>
+        </select>
+      </div>
+      <div class="form-group" id="editGrpEquipo" style="display:none"><label>Nombre del equipo</label><input type="text" id="editEquipo" autocomplete="off"></div>
+      <div class="form-group" id="editGrpNombre2" style="display:none"><label>Segundo integrante</label><input type="text" id="editNombre2" autocomplete="off"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeEdit()">Cancelar</button>
+      <button class="btn-primary" style="flex:1" onclick="saveEdit()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── PIN ──
+const PIN = '369';
+function checkPin(){
+  const v=document.getElementById('pinInput').value;
+  if(v===PIN){
+    document.getElementById('pinScreen').style.display='none';
+    document.getElementById('app').style.display='block';
+    init();
+  } else {
+    const inp=document.getElementById('pinInput');
+    inp.classList.add('error');
+    document.getElementById('pinErr').textContent='PIN incorrecto';
+    setTimeout(()=>{inp.classList.remove('error');inp.value='';document.getElementById('pinErr').textContent='';},1000);
+  }
+}
+
+// ── CONFIG ──
+const SUPABASE_URL='https://ktfwkbaxjmpvtdbjzwdg.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt0ZndrYmF4am1wdnRkYmp6d2RnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3MzU1OTksImV4cCI6MjA5NzMxMTU5OX0.sLj3a9JEqvdPWuPLO9AoH6TUBoLxRAYxLT0NI87HDDU';
+const HEADERS={'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=representation'};
+const STATIONS=['Soga','Remo','Trineo','Burpee Estático','Marcha','Desplante Estático','Wall Ball'];
+const HEATS=Array.from({length:12},(_,i)=>{const l=String.fromCharCode(65+i),t=8*60+i*30;return{letter:l,label:'Heat '+l,time:String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0')};});
+
+function populateHeatSelect(sel){
+  sel.innerHTML='<option value="">— selecciona —</option>';
+  HEATS.forEach(h=>{const o=document.createElement('option');o.value=h.letter;o.textContent=h.label+' — '+h.time;sel.appendChild(o);});
+}
+
+let athletes=[], timesMap={}, editingId=null, saveTimers={};
+
+function heatInfo(l){return HEATS.find(h=>h.letter===l)||{label:'Heat '+l,time:''};}
+function heatColor(l){const c=['#00b4d8','#7b2fff','#ff9f1c','#e63946','#8ecb7a','#f5c542','#ff64b4','#00c896','#ff4500','#8888ff','#c0c0c0','#ffcc00'];return c[(l.charCodeAt(0)-65)%c.length];}
+function catLabel(c){return c==='H'?'Hombre':c==='M'?'Mujer':'Mixto';}
+function toSec(mm,ss){return(parseInt(mm)||0)*60+(parseInt(ss)||0);}
+function fmtTime(s){if(!s&&s!==0)return'—';return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
+function athleteTotal(id){const t=timesMap[id]||{};let sum=0,count=0;for(let i=0;i<STATIONS.length;i++){if(t[i]>0){sum+=t[i];count++;}}return{sum,count,complete:count===STATIONS.length};}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+function setSyncDot(s){const d=document.getElementById('syncDot');d.className='sync-dot '+s;}
+function showToast(msg,isErr){const el=document.getElementById('toast');el.textContent=msg;el.style.background=isErr?'#c0392b':'var(--accent)';el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2000);}
+
+async function sbFetch(path,method='GET',body=null){
+  const opts={method,headers:{...HEADERS}};
+  if(body)opts.body=JSON.stringify(body);
+  const res=await fetch(SUPABASE_URL+path,opts);
+  if(!res.ok){const e=await res.text();throw new Error(e);}
+  const text=await res.text();
+  return text?JSON.parse(text):null;
+}
+
+async function loadAll(){
+  setSyncDot('busy');
+  try{
+    const[ath,tms]=await Promise.all([
+      sbFetch('/rest/v1/athletes?select=*&order=created_at.asc'),
+      sbFetch('/rest/v1/times?select=*')
+    ]);
+    athletes=ath||[];
+    timesMap={};
+    (tms||[]).forEach(r=>{if(!timesMap[r.athlete_id])timesMap[r.athlete_id]={};timesMap[r.athlete_id][r.station]=r.seconds;});
+    setSyncDot('ok');
+    renderAthleteList();
+    renderTimeBlocks();
+    updateStats();
+  }catch(e){setSyncDot('err');showToast('Error de conexión',true);}
+}
+
+function toggleMixedFields(){
+  const isMx=document.getElementById('inCat').value==='MX';
+  document.getElementById('grpEquipo').style.display=isMx?'flex':'none';
+  document.getElementById('grpNombre2').style.display=isMx?'flex':'none';
+}
+function toggleEditMixedFields(){
+  const isMx=document.getElementById('editCat').value==='MX';
+  document.getElementById('editGrpEquipo').style.display=isMx?'flex':'none';
+  document.getElementById('editGrpNombre2').style.display=isMx?'flex':'none';
+}
+
+async function registerAthlete(){
+  const nombre=document.getElementById('inNombre').value.trim();
+  const alias=document.getElementById('inAlias').value.trim();
+  const heat=document.getElementById('inHeat').value;
+  const cat=document.getElementById('inCat').value;
+  const nombre2=document.getElementById('inNombre2').value.trim();
+  const equipo=document.getElementById('inEquipo').value.trim();
+  if(!nombre){showToast('Falta el nombre',true);return;}
+  if(!heat){showToast('Selecciona un heat',true);return;}
+  if(!cat){showToast('Selecciona categoría',true);return;}
+  if(cat==='MX'){
+    if(!equipo){showToast('Falta el nombre del equipo',true);return;}
+    if(!nombre2){showToast('Falta el segundo integrante',true);return;}
+  }
+  const btn=document.getElementById('btnRegister');btn.disabled=true;setSyncDot('busy');
+  const a={id:uid(),nombre,alias:alias||(cat==='MX'?equipo:nombre.split(' ')[0]),heat,cat,
+           nombre2:cat==='MX'?nombre2:null, equipo:cat==='MX'?equipo:null};
+  try{
+    await sbFetch('/rest/v1/athletes','POST',a);
+    athletes.push(a);timesMap[a.id]={};
+    document.getElementById('inNombre').value='';document.getElementById('inAlias').value='';
+    document.getElementById('inHeat').value='';document.getElementById('inCat').value='';
+    document.getElementById('inNombre2').value='';document.getElementById('inEquipo').value='';
+    toggleMixedFields();
+    setSyncDot('ok');showToast('✓ '+a.alias+' registrado');
+    renderAthleteList();renderTimeBlocks();updateStats();
+  }catch(e){setSyncDot('err');showToast('Error al registrar',true);}
+  btn.disabled=false;
+}
+
+async function removeAthlete(id){
+  if(!confirm('¿Eliminar atleta?'))return;
+  setSyncDot('busy');
+  try{
+    await sbFetch('/rest/v1/athletes?id=eq.'+id,'DELETE');
+    athletes=athletes.filter(a=>a.id!==id);delete timesMap[id];
+    setSyncDot('ok');showToast('Atleta eliminado');
+    renderAthleteList();renderTimeBlocks();updateStats();
+  }catch(e){setSyncDot('err');showToast('Error al eliminar',true);}
+}
+
+function openEdit(id){
+  const a=athletes.find(x=>x.id===id);if(!a)return;
+  editingId=id;
+  document.getElementById('editNombre').value=a.nombre;
+  document.getElementById('editAlias').value=a.alias;
+  document.getElementById('editHeat').value=a.heat;
+  document.getElementById('editCat').value=a.cat;
+  document.getElementById('editNombre2').value=a.nombre2||'';
+  document.getElementById('editEquipo').value=a.equipo||'';
+  toggleEditMixedFields();
+  document.getElementById('editModal').classList.add('open');
+}
+function closeEdit(){editingId=null;document.getElementById('editModal').classList.remove('open');}
+async function saveEdit(){
+  if(!editingId)return;
+  const nombre=document.getElementById('editNombre').value.trim();
+  const alias=document.getElementById('editAlias').value.trim();
+  const heat=document.getElementById('editHeat').value;
+  const cat=document.getElementById('editCat').value;
+  const nombre2=document.getElementById('editNombre2').value.trim();
+  const equipo=document.getElementById('editEquipo').value.trim();
+  if(!nombre||!heat||!cat){showToast('Completa todos los campos',true);return;}
+  if(cat==='MX'&&(!equipo||!nombre2)){showToast('Completa equipo y segundo integrante',true);return;}
+  setSyncDot('busy');
+  const payload={nombre,alias,heat,cat,nombre2:cat==='MX'?nombre2:null,equipo:cat==='MX'?equipo:null};
+  try{
+    await sbFetch('/rest/v1/athletes?id=eq.'+editingId,'PATCH',payload);
+    const idx=athletes.findIndex(a=>a.id===editingId);
+    if(idx>=0)athletes[idx]={...athletes[idx],...payload};
+    setSyncDot('ok');showToast('✓ Guardado');closeEdit();
+    renderAthleteList();renderTimeBlocks();
+  }catch(e){setSyncDot('err');showToast('Error al guardar',true);}
+}
+
+function saveTime(aid,idx,wrap){
+  const inputs=wrap.querySelectorAll('.time-field');
+  const sec=toSec(inputs[0].value,inputs[1].value);
+  if(!timesMap[aid])timesMap[aid]={};
+  timesMap[aid][idx]=sec;
+  const{sum,complete}=athleteTotal(aid);
+  const totalEl=document.getElementById('total-'+aid);
+  if(totalEl){totalEl.textContent=sum>0?fmtTime(sum):'—';totalEl.classList.toggle('complete',complete);}
+  updateStats();
+  clearTimeout(saveTimers[aid+'_'+idx]);
+  saveTimers[aid+'_'+idx]=setTimeout(async()=>{
+    setSyncDot('busy');
+    try{
+      // Upsert nativo: inserta o actualiza en una sola llamada (sin error 409)
+      const res=await fetch(SUPABASE_URL+'/rest/v1/times',{
+        method:'POST',
+        headers:{...HEADERS,'Prefer':'resolution=merge-duplicates,return=representation'},
+        body:JSON.stringify({athlete_id:aid,station:idx,seconds:sec})
+      });
+      if(!res.ok)throw new Error(await res.text());
+      setSyncDot('ok');
+    }catch(e){setSyncDot('err');showToast('No se guardó el tiempo',true);}
+  },800);
+}
+
+function switchTab(name){
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['registro','tiempos'][i]===name));
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+}
+
+function displayName(a){
+  // For Mixto, the team name is the headline; members shown as subtitle
+  if(a.cat==='MX') return a.equipo || a.alias || a.nombre;
+  return a.nombre;
+}
+function displaySub(a){
+  if(a.cat==='MX'){
+    const members=[a.nombre, a.nombre2].filter(Boolean).join(' · ');
+    return members || a.alias;
+  }
+  return a.alias;
+}
+
+function renderAthleteList(){
+  const el=document.getElementById('athleteList');
+  if(!athletes.length){el.innerHTML='<div class="empty"><strong>Sin atletas aún</strong>Registra al primero arriba.</div>';return;}
+  el.innerHTML=athletes.map((a,i)=>{
+    const hi=heatInfo(a.heat),hc=heatColor(a.heat);
+    return`<div class="athlete-row">
+      <span class="athlete-num">${i+1}</span>
+      <div><div class="a-name">${displayName(a)}</div><div class="a-alias">${displaySub(a)}</div></div>
+      <span class="heat-badge" style="background:${hc}22;color:${hc}">${hi.label} ${hi.time}</span>
+      <span class="cat-badge cat-${a.cat}">${catLabel(a.cat)}</span>
+      <div style="display:flex;gap:0.2rem">
+        <button class="btn-icon" onclick="openEdit('${a.id}')">✎</button>
+        <button class="btn-icon" onclick="removeAthlete('${a.id}')">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderTimeBlocks(){
+  const el=document.getElementById('timeBlocks');
+  if(!athletes.length){el.innerHTML='<div class="empty"><strong>Sin atletas</strong>Registra atletas primero.</div>';return;}
+  const groups={};HEATS.forEach(h=>{groups[h.letter]=[];});
+  athletes.forEach(a=>{if(!groups[a.heat])groups[a.heat]=[];groups[a.heat].push(a);});
+  let html='';
+  HEATS.forEach(h=>{
+    const list=groups[h.letter];if(!list||!list.length)return;
+    const hc=heatColor(h.letter);
+    html+=`<div class="heat-group-header"><span class="heat-badge" style="background:${hc}22;color:${hc}">${h.label}</span><span class="heat-group-time">${h.time} hrs</span></div>`;
+    list.forEach(a=>{
+      const t=timesMap[a.id]||{},{sum,complete}=athleteTotal(a.id);
+      const stations=STATIONS.map((s,i)=>{
+        const sec=t[i]||0,mm=sec>0?String(Math.floor(sec/60)).padStart(2,'0'):'',ss=sec>0?String(sec%60).padStart(2,'0'):'';
+        return`<div class="station-cell"><span class="station-label">${s}</span><div class="time-input-wrap">
+          <input class="time-field" type="number" min="0" max="99" placeholder="00" value="${mm}" onchange="saveTime('${a.id}',${i},this.parentNode)">
+          <span class="time-sep">:</span>
+          <input class="time-field" type="number" min="0" max="59" placeholder="00" value="${ss}" onchange="saveTime('${a.id}',${i},this.parentNode)">
+        </div></div>`;
+      }).join('');
+      html+=`<div class="athlete-block" id="block-${a.id}">
+        <div class="athlete-block-header" onclick="toggleBlock('${a.id}')">
+          <span class="cat-badge cat-${a.cat}">${catLabel(a.cat)}</span>
+          <div style="flex:1"><div class="ab-name">${displayName(a)}</div><div class="ab-alias">${displaySub(a)}</div></div>
+          <span class="total-time ${complete?'complete':''}" id="total-${a.id}">${sum>0?fmtTime(sum):'—'}</span>
+          <span class="chevron">▼</span>
+        </div>
+        <div class="station-grid">${stations}</div>
+      </div>`;
+    });
+  });
+  el.innerHTML=html;
+}
+
+function toggleBlock(id){document.getElementById('block-'+id).classList.toggle('open');}
+
+function updateStats(){
+  document.getElementById('statAthletes').textContent=athletes.length;
+  document.getElementById('statComplete').textContent=athletes.filter(a=>athleteTotal(a.id).complete).length;
+}
+
+function init(){
+  populateHeatSelect(document.getElementById('inHeat'));
+  populateHeatSelect(document.getElementById('editHeat'));
+  loadAll();
+}
+</script>
+</body>
+</html>
