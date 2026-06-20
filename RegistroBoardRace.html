@@ -263,7 +263,7 @@ function checkPin(){
 const SUPABASE_URL='https://ktfwkbaxjmpvtdbjzwdg.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt0ZndrYmF4am1wdnRkYmp6d2RnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3MzU1OTksImV4cCI6MjA5NzMxMTU5OX0.sLj3a9JEqvdPWuPLO9AoH6TUBoLxRAYxLT0NI87HDDU';
 const HEADERS={'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=representation'};
-const STATIONS=['Soga','Remo','Trineo','Burpee Estático','Marcha','Desplante Estático','Wall Ball'];
+const STATIONS=['Run 1km','Remo','Run 1km','Sled Push','Run 1km','Burpees','Run 1km','Farmer Carry','Run 1km','Desplantes','Run 1km','SkiErg','Run 1km','Wall Ball'];
 const HEATS=Array.from({length:12},(_,i)=>{const l=String.fromCharCode(65+i),t=8*60+i*30;return{letter:l,label:'Heat '+l,time:String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0')};});
 
 function populateHeatSelect(sel){
@@ -471,7 +471,7 @@ function renderTimeBlocks(){
       const t=timesMap[a.id]||{},{sum,complete}=athleteTotal(a.id);
       const stations=STATIONS.map((s,i)=>{
         const sec=t[i]||0,mm=sec>0?String(Math.floor(sec/60)).padStart(2,'0'):'',ss=sec>0?String(sec%60).padStart(2,'0'):'';
-        return`<div class="station-cell"><span class="station-label">${s}</span><div class="time-input-wrap">
+        return`<div class="station-cell"><span class="station-label">${i+1}. ${s}</span><div class="time-input-wrap">
           <input class="time-field" type="number" min="0" max="99" placeholder="00" value="${mm}" onchange="saveTime('${a.id}',${i},this.parentNode)">
           <span class="time-sep">:</span>
           <input class="time-field" type="number" min="0" max="59" placeholder="00" value="${ss}" onchange="saveTime('${a.id}',${i},this.parentNode)">
