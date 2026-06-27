@@ -70,7 +70,7 @@
   .sort-select option { background: #141414; }
 
   .lb-wrap { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
-  .lb-row { display: grid; grid-template-columns: 48px 1fr 96px 88px; align-items: center; padding: 0.7rem 1rem; border-bottom: 1px solid var(--border); gap: 0.5rem; }
+  .lb-row { display: grid; grid-template-columns: 40px 1fr 64px 64px 80px; align-items: center; padding: 0.7rem 1rem; border-bottom: 1px solid var(--border); gap: 0.5rem; }
   .lb-row:last-child { border-bottom: none; }
   .lb-row.lb-header { background: var(--surface); }
   .lb-rank { font-family: 'Barlow Condensed', sans-serif; font-size: 1rem; font-weight: 700; text-align: center; color: var(--muted); }
@@ -105,7 +105,7 @@
     .header { padding: 1rem; }
     .brand-name { font-size: 1.4rem; }
     .main { padding: 1rem; }
-    .lb-row { grid-template-columns: 36px 1fr 76px 72px; }
+    .lb-row { grid-template-columns: 32px 1fr 52px 52px 64px; }
   }
 </style>
 </head>
@@ -143,8 +143,7 @@
 const SUPABASE_URL = 'https://ktfwkbaxjmpvtdbjzwdg.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt0ZndrYmF4am1wdnRkYmp6d2RnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3MzU1OTksImV4cCI6MjA5NzMxMTU5OX0.sLj3a9JEqvdPWuPLO9AoH6TUBoLxRAYxLT0NI87HDDU';
 const HDR = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY };
-const STATIONS = ['Run 1km','Remo','Run 1km','Sled Push','Run 1km','Burpees','Run 1km','Farmer Carry','Run 1km','Desplantes','Run 1km','SkiErg','Run 1km','Wall Ball'];
-const HEATS = Array.from({length:12},(_,i)=>{
+const HEATS = Array.from({length:21},(_,i)=>{
   const l=String.fromCharCode(65+i), t=8*60+i*30;
   return {letter:l,label:'H-'+l,time:String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0')};
 });
@@ -152,73 +151,54 @@ function heatInfo(l){return HEATS.find(h=>h.letter===l)||{label:'H-'+l,time:''};
 function heatColor(l){const c=['#00b4d8','#7b2fff','#ff9f1c','#e63946','#8ecb7a','#f5c542','#ff64b4','#00c896','#ff4500','#8888ff','#c0c0c0','#ffcc00'];return c[(l.charCodeAt(0)-65)%c.length];}
 function catLabel(c){return c==='H'?'Hombre':c==='M'?'Mujer':'Mixto';}
 function displayName(a){ if(a.cat==='MX') return a.equipo||a.alias||a.nombre; return a.nombre; }
-function displaySub(a){ if(a.cat==='MX'){const m=[a.nombre,a.nombre2].filter(Boolean).join(' · ');return m||a.alias;} return a.alias; }
-function fmtTime(s){if(!s&&s!==0)return'—';return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
-function athleteTotal(id,timesMap){
-  const t=timesMap[id]||{};let sum=0,count=0;
-  for(let i=0;i<STATIONS.length;i++){if(t[i]>0){sum+=t[i];count++;}}
-  return{sum,count,complete:count===STATIONS.length};
+function displaySub(a){ if(a.cat==='MX'){const m1=a.nombre+(a.alias?' ('+a.alias+')':'');const m2=a.nombre2?(a.nombre2+(a.alias2?' ('+a.alias2+')':'')):'';const m=[m1,m2].filter(Boolean).join(' · ');return m||a.alias;} return a.alias; }
+function fmtTime(s){if(!s&&s!==0)return'—';const sign=s<0?'-':'';s=Math.abs(s);const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60;return sign+(h>0?String(h).padStart(2,'0')+':':'')+String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');}
+function clockToSec(str){if(!str)return null;const p=str.trim().split(':').map(x=>parseInt(x,10));if(p.some(isNaN))return null;if(p.length===3)return p[0]*3600+p[1]*60+p[2];if(p.length===2)return p[0]*60+p[1];return null;}
+function hhmm(str){if(!str)return'—';const p=str.split(':');return p.length>=2?p[0].padStart(2,'0')+':'+p[1].padStart(2,'0'):str;}
+function athleteTotal(a){
+  const ini=clockToSec(a.hora_inicio), fin=clockToSec(a.hora_fin);
+  if(ini===null||fin===null)return{sum:0,complete:false};
+  let diff=fin-ini; if(diff<0)diff+=24*3600;
+  return{sum:diff,complete:true};
 }
 
 let currentCat = 'H';
-let sortBy = 'total'; // 'total' or station index (0-13)
 function setCat(val,btn){
   currentCat=val;
   document.querySelectorAll('.cat-tab').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  render(window._athletes||[], window._timesMap||{});
-}
-function setSortBy(val){
-  sortBy = val==='total' ? 'total' : parseInt(val);
-  render(window._athletes||[], window._timesMap||{});
+  render(window._athletes||[]);
 }
 
 async function load(){
   try{
-    const [ath,tms]=await Promise.all([
-      fetch(SUPABASE_URL+'/rest/v1/athletes?select=*&order=created_at.asc',{headers:HDR}).then(r=>r.json()),
-      fetch(SUPABASE_URL+'/rest/v1/times?select=*',{headers:HDR}).then(r=>r.json())
-    ]);
-    const timesMap={};
-    (tms||[]).forEach(r=>{if(!timesMap[r.athlete_id])timesMap[r.athlete_id]={};timesMap[r.athlete_id][r.station]=r.seconds;});
+    const ath=await fetch(SUPABASE_URL+'/rest/v1/athletes?select=*&order=created_at.asc',{headers:HDR}).then(r=>r.json());
     window._athletes=ath||[];
-    window._timesMap=timesMap;
-    render(ath||[],timesMap);
+    render(ath||[]);
     document.getElementById('statAthletes').textContent=(ath||[]).length;
-    document.getElementById('statComplete').textContent=(ath||[]).filter(a=>athleteTotal(a.id,timesMap).complete).length;
+    document.getElementById('statComplete').textContent=(ath||[]).filter(a=>athleteTotal(a).complete).length;
     const now=new Date();
     document.getElementById('lastUpdate').textContent='Actualizado '+String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0')+':'+String(now.getSeconds()).padStart(2,'0');
   }catch(e){console.error(e);}
 }
 
-function render(athletes,timesMap){
-  let pool=athletes.map(a=>({...a,...athleteTotal(a.id,timesMap),times:timesMap[a.id]||{}}));
+function render(athletes){
+  let pool=athletes.map(a=>({...a,...athleteTotal(a)}));
   pool=pool.filter(a=>a.cat===currentCat);
 
-  if(sortBy==='total'){
-    // Complete first by total time, then incomplete by station count
-    pool.sort((a,b)=>{
-      if(a.complete&&b.complete)return a.sum-b.sum;
-      if(a.complete)return-1;if(b.complete)return 1;
-      return b.count-a.count;
-    });
-  }else{
-    // Sort by a specific station time. Athletes with a time for that station first (asc), rest after.
-    pool.sort((a,b)=>{
-      const ta=a.times[sortBy], tb=b.times[sortBy];
-      const va=ta>0?ta:Infinity, vb=tb>0?tb:Infinity;
-      if(va!==vb)return va-vb;
-      return b.count-a.count;
-    });
-  }
+  // Complete (with total) first by time, then incomplete
+  pool.sort((a,b)=>{
+    if(a.complete&&b.complete)return a.sum-b.sum;
+    if(a.complete)return-1;if(b.complete)return 1;
+    return 0;
+  });
 
   const lb=document.getElementById('leaderboard');
   const ps=document.getElementById('podiumSection');
   if(!pool.length){lb.innerHTML='<div class="empty-state"><strong>En espera</strong>Los resultados aparecerán aquí.</div>';ps.style.display='none';return;}
 
-  // Podium ALWAYS by total (complete athletes), regardless of sort selection
-  const byTotal=[...pool].filter(r=>r.complete).sort((a,b)=>a.sum-b.sum);
-  const top3=byTotal.slice(0,3);
+  // Podium by total
+  const top3=pool.filter(r=>r.complete).slice(0,3);
   if(top3.length>=2){
     ps.style.display='block';
     const medals=['🥇','🥈','🥉'];
@@ -238,51 +218,32 @@ function render(athletes,timesMap){
     }).join('');
   }else{ps.style.display='none';}
 
-  // Build sort selector options
-  const sortOpts = ['<option value="total"'+(sortBy==='total'?' selected':'')+'>Tiempo total</option>']
-    .concat(STATIONS.map((s,i)=>'<option value="'+i+'"'+(sortBy===i?' selected':'')+'>'+(i+1)+'. '+s+'</option>'))
-    .join('');
-
-  // The highlighted column = the segment being sorted by (or none if total)
-  const segLabel = sortBy==='total' ? 'Total' : (sortBy+1)+'. '+STATIONS[sortBy];
-
-  let html=`<div class="sort-bar">
-    <span class="sort-label">Ordenar por</span>
-    <select class="sort-select" onchange="setSortBy(this.value)">${sortOpts}</select>
-  </div>`;
-
-  html+=`<div class="lb-wrap">
+  let html=`<div class="lb-wrap">
     <div class="lb-row lb-header">
       <div class="col-header">#</div>
       <div class="col-header left">Atleta</div>
-      <div class="col-header seg">${segLabel}</div>
+      <div class="col-header seg">Inicio</div>
+      <div class="col-header seg">Fin</div>
       <div class="col-header right">Total</div>
     </div>`;
 
   html+=pool.map((r,i)=>{
     const rank=i+1;
-    const isPodiumByTotal = sortBy==='total' && rank<=3 && r.complete;
-    const rankClass=isPodiumByTotal?'r'+rank:'';
-    const rankLabel=isPodiumByTotal?['🥇','🥈','🥉'][rank-1]:rank;
+    const isPodium = rank<=3 && r.complete;
+    const rankClass=isPodium?'r'+rank:'';
+    const rankLabel=isPodium?['🥇','🥈','🥉'][rank-1]:rank;
     const hc=heatColor(r.heat),hi=heatInfo(r.heat);
-    // Segment cell: the time for the sorted station, or total if sorting by total
-    let segCell;
-    if(sortBy==='total'){
-      segCell = r.complete?`<div class="lb-seg">${fmtTime(r.sum)}</div>`:`<div class="lb-seg empty">${r.count}/${STATIONS.length}</div>`;
-    }else{
-      const v=r.times[sortBy];
-      segCell = v>0?`<div class="lb-seg hot">${fmtTime(v)}</div>`:`<div class="lb-seg empty">—</div>`;
-    }
     const totalDisplay=r.complete
       ?`<div class="lb-total">${fmtTime(r.sum)}</div>`
-      :`<div class="lb-total incomplete">${r.count}/${STATIONS.length}</div>`;
+      :`<div class="lb-total incomplete">en curso</div>`;
     return`<div class="lb-row">
       <div class="lb-rank ${rankClass}">${rankLabel}</div>
       <div class="lb-athlete">
         <div class="name">${displayName(r)}</div>
         <div class="alias">${displaySub(r)} &nbsp;<span class="hb" style="background:${hc}22;color:${hc}">${hi.label}</span> <span class="cb cat-${r.cat}">${catLabel(r.cat)}</span></div>
       </div>
-      ${segCell}
+      <div class="lb-seg">${hhmm(r.hora_inicio)}</div>
+      <div class="lb-seg">${hhmm(r.hora_fin)}</div>
       ${totalDisplay}
     </div>`;
   }).join('');
