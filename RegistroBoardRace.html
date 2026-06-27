@@ -135,6 +135,8 @@
   .time-input-wrap { display: flex; align-items: center; gap: 0.3rem; background: var(--surface); border: 1px solid var(--border2); border-radius: 4px; padding: 0.3rem 0.5rem; transition: border-color 0.15s; }
   .time-input-wrap:focus-within { border-color: var(--accent); }
   .time-field { background: none; border: none; color: var(--text); font-family: 'Barlow Condensed', sans-serif; font-size: 1rem; font-weight: 600; outline: none; width: 36px; text-align: center; }
+  .clock-field { background: none; border: none; color: var(--text); font-family: 'Barlow Condensed', sans-serif; font-size: 1.05rem; font-weight: 600; outline: none; width: 100%; }
+  .clock-field::-webkit-calendar-picker-indicator { filter: invert(0.6); }
   .time-sep { color: var(--muted); font-family: 'Barlow Condensed', sans-serif; font-size: 0.9rem; }
 
   .empty { text-align: center; padding: 3rem 1rem; color: var(--muted); font-size: 0.88rem; }
@@ -181,6 +183,7 @@
   <div class="tabs">
     <button class="tab-btn active" onclick="switchTab('registro')">Registro</button>
     <button class="tab-btn" onclick="switchTab('tiempos')">Tiempos</button>
+    <button class="tab-btn" onclick="switchTab('inventario')">Inventario</button>
   </div>
 
   <!-- REGISTRO -->
@@ -188,9 +191,6 @@
     <div class="register-card">
       <p class="section-title">Nuevo atleta</p>
       <div class="form-grid">
-        <div class="form-group"><label>Nombre completo</label><input type="text" id="inNombre" placeholder="Ej. Carlos Mendoza" autocomplete="off"></div>
-        <div class="form-group"><label>Alias / Apodo</label><input type="text" id="inAlias" placeholder="Ej. El Tanque" autocomplete="off"></div>
-        <div class="form-group"><label>Heat</label><select id="inHeat"><option value="">— selecciona —</option></select></div>
         <div class="form-group"><label>Categoría</label>
           <select id="inCat" onchange="toggleMixedFields()">
             <option value="">— selecciona —</option>
@@ -200,7 +200,31 @@
           </select>
         </div>
         <div class="form-group" id="grpEquipo" style="display:none"><label>Nombre del equipo</label><input type="text" id="inEquipo" placeholder="Ej. Los Truenos" autocomplete="off"></div>
+        <div class="form-group"><label id="lblNombre">Nombre completo</label><input type="text" id="inNombre" placeholder="Ej. Carlos Mendoza" autocomplete="off"></div>
         <div class="form-group" id="grpNombre2" style="display:none"><label>Segundo integrante</label><input type="text" id="inNombre2" placeholder="Ej. Ana López" autocomplete="off"></div>
+        <div class="form-group" id="grpAlias"><label id="lblAlias">Alias / Apodo</label><input type="text" id="inAlias" placeholder="Ej. El Tanque" autocomplete="off"></div>
+        <div class="form-group" id="grpAlias2" style="display:none"><label>Alias integrante 2</label><input type="text" id="inAlias2" placeholder="Ej. La Flecha" autocomplete="off"></div>
+        <div class="form-group"><label>Heat</label><select id="inHeat"><option value="">— selecciona —</option></select></div>
+        <div class="form-group"><label id="lblColor">Color playera</label>
+          <select id="inColor" onchange="fillSizeSelect(document.getElementById('inTalla'),this.value,'')">
+            <option value="">— color —</option>
+            <option value="Amarilla">Amarilla</option>
+            <option value="Negra">Negra</option>
+          </select>
+        </div>
+        <div class="form-group"><label id="lblTalla">Talla playera</label>
+          <select id="inTalla"><option value="">— talla —</option></select>
+        </div>
+        <div class="form-group" id="grpColor2" style="display:none"><label>Color playera 2</label>
+          <select id="inColor2" onchange="fillSizeSelect(document.getElementById('inTalla2'),this.value,'')">
+            <option value="">— color —</option>
+            <option value="Amarilla">Amarilla</option>
+            <option value="Negra">Negra</option>
+          </select>
+        </div>
+        <div class="form-group" id="grpTalla2" style="display:none"><label>Talla playera 2</label>
+          <select id="inTalla2"><option value="">— talla —</option></select>
+        </div>
       </div>
       <button class="btn-primary" id="btnRegister" onclick="registerAthlete()">＋ Registrar atleta</button>
     </div>
@@ -213,6 +237,11 @@
     <p class="section-title">Captura de tiempos (MM:SS)</p>
     <div id="timeBlocks"><div class="empty"><strong>Cargando...</strong></div></div>
   </div>
+
+  <div id="tab-inventario" class="view">
+    <p class="section-title">Inventario de playeras</p>
+    <div id="inventoryView"><div class="empty"><strong>Cargando...</strong></div></div>
+  </div>
 </div>
 
 <!-- EDIT MODAL -->
@@ -221,7 +250,8 @@
     <p class="modal-title">Editar atleta</p>
     <div class="form-grid">
       <div class="form-group"><label>Nombre completo</label><input type="text" id="editNombre" autocomplete="off"></div>
-      <div class="form-group"><label>Alias</label><input type="text" id="editAlias" autocomplete="off"></div>
+      <div class="form-group"><label id="editLblAlias">Alias</label><input type="text" id="editAlias" autocomplete="off"></div>
+      <div class="form-group" id="editGrpAlias2" style="display:none"><label>Alias integrante 2</label><input type="text" id="editAlias2" autocomplete="off"></div>
       <div class="form-group"><label>Heat</label><select id="editHeat"></select></div>
       <div class="form-group"><label>Categoría</label>
         <select id="editCat" onchange="toggleEditMixedFields()">
@@ -232,6 +262,26 @@
       </div>
       <div class="form-group" id="editGrpEquipo" style="display:none"><label>Nombre del equipo</label><input type="text" id="editEquipo" autocomplete="off"></div>
       <div class="form-group" id="editGrpNombre2" style="display:none"><label>Segundo integrante</label><input type="text" id="editNombre2" autocomplete="off"></div>
+      <div class="form-group"><label id="editLblColor">Color playera</label>
+        <select id="editColor" onchange="fillSizeSelect(document.getElementById('editTalla'),this.value,document.getElementById('editTalla').dataset.cur||'')">
+          <option value="">— color —</option>
+          <option value="Amarilla">Amarilla</option>
+          <option value="Negra">Negra</option>
+        </select>
+      </div>
+      <div class="form-group"><label id="editLblTalla">Talla playera</label>
+        <select id="editTalla"><option value="">— talla —</option></select>
+      </div>
+      <div class="form-group" id="editGrpColor2" style="display:none"><label>Color playera 2</label>
+        <select id="editColor2" onchange="fillSizeSelect(document.getElementById('editTalla2'),this.value,document.getElementById('editTalla2').dataset.cur||'')">
+          <option value="">— color —</option>
+          <option value="Amarilla">Amarilla</option>
+          <option value="Negra">Negra</option>
+        </select>
+      </div>
+      <div class="form-group" id="editGrpTalla2" style="display:none"><label>Talla playera 2</label>
+        <select id="editTalla2"><option value="">— talla —</option></select>
+      </div>
     </div>
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeEdit()">Cancelar</button>
@@ -263,12 +313,31 @@ function checkPin(){
 const SUPABASE_URL='https://ktfwkbaxjmpvtdbjzwdg.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt0ZndrYmF4am1wdnRkYmp6d2RnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3MzU1OTksImV4cCI6MjA5NzMxMTU5OX0.sLj3a9JEqvdPWuPLO9AoH6TUBoLxRAYxLT0NI87HDDU';
 const HEADERS={'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=representation'};
-const STATIONS=['Run 1km','Remo','Run 1km','Sled Push','Run 1km','Burpees','Run 1km','Farmer Carry','Run 1km','Desplantes','Run 1km','SkiErg','Run 1km','Wall Ball'];
-const HEATS=Array.from({length:12},(_,i)=>{const l=String.fromCharCode(65+i),t=8*60+i*30;return{letter:l,label:'Heat '+l,time:String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0')};});
+// (Los 14 retos ya no se capturan; el total se calcula con hora_inicio y hora_fin)
+// 21 horarios de 8:00 a 18:00 cada 30 min. Cada heat admite 2 atletas (HEAT_CAP).
+const HEAT_CAP=2;
+const HEATS=Array.from({length:21},(_,i)=>{const l=String.fromCharCode(65+i),t=8*60+i*30;return{letter:l,label:'Heat '+l,time:String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0')};});
 
-function populateHeatSelect(sel){
+// Catálogo de playeras
+const SHIRT_COLORS=['Amarilla','Negra'];
+const SHIRT_SIZES=['M','L','XL'];
+let inventory={}; // { 'Amarilla|M': stock, ... }
+
+function invKey(color,talla){return color+'|'+talla;}
+function invStock(color,talla){const v=inventory[invKey(color,talla)];return v===undefined?0:v;}
+
+function populateHeatSelect(sel,currentVal){
   sel.innerHTML='<option value="">— selecciona —</option>';
-  HEATS.forEach(h=>{const o=document.createElement('option');o.value=h.letter;o.textContent=h.label+' — '+h.time;sel.appendChild(o);});
+  HEATS.forEach(h=>{
+    const taken=athletes.filter(a=>a.heat===h.letter).length;
+    const full=taken>=HEAT_CAP;
+    const o=document.createElement('option');
+    o.value=h.letter;
+    o.textContent=h.label+' — '+h.time+' ('+taken+'/'+HEAT_CAP+')'+(full?' · LLENO':'');
+    // Allow keeping the current value when editing even if full
+    if(full && h.letter!==currentVal) o.disabled=true;
+    sel.appendChild(o);
+  });
 }
 
 let athletes=[], timesMap={}, editingId=null, saveTimers={};
@@ -276,9 +345,26 @@ let athletes=[], timesMap={}, editingId=null, saveTimers={};
 function heatInfo(l){return HEATS.find(h=>h.letter===l)||{label:'Heat '+l,time:''};}
 function heatColor(l){const c=['#00b4d8','#7b2fff','#ff9f1c','#e63946','#8ecb7a','#f5c542','#ff64b4','#00c896','#ff4500','#8888ff','#c0c0c0','#ffcc00'];return c[(l.charCodeAt(0)-65)%c.length];}
 function catLabel(c){return c==='H'?'Hombre':c==='M'?'Mujer':'Mixto';}
-function toSec(mm,ss){return(parseInt(mm)||0)*60+(parseInt(ss)||0);}
-function fmtTime(s){if(!s&&s!==0)return'—';return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
-function athleteTotal(id){const t=timesMap[id]||{};let sum=0,count=0;for(let i=0;i<STATIONS.length;i++){if(t[i]>0){sum+=t[i];count++;}}return{sum,count,complete:count===STATIONS.length};}
+function fmtTime(s){if(!s&&s!==0)return'—';const sign=s<0?'-':'';s=Math.abs(s);const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60;return sign+(h>0?String(h).padStart(2,'0')+':':'')+String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');}
+// Parsea "HH:MM:SS" (o "MM:SS") a segundos del día. Devuelve null si inválido o vacío.
+function clockToSec(str){
+  if(!str)return null;
+  const p=str.trim().split(':').map(x=>parseInt(x,10));
+  if(p.some(isNaN))return null;
+  if(p.length===3)return p[0]*3600+p[1]*60+p[2];
+  if(p.length===2)return p[0]*60+p[1];
+  return null;
+}
+// Total = hora_fin - hora_inicio (en segundos). Cruza medianoche si fin<inicio (poco probable aquí).
+function athleteTotal(id){
+  const a=athletes.find(x=>x.id===id);
+  if(!a)return{sum:0,complete:false,hasStart:false,hasEnd:false};
+  const ini=clockToSec(a.hora_inicio), fin=clockToSec(a.hora_fin);
+  const hasStart=ini!==null, hasEnd=fin!==null;
+  if(!hasStart||!hasEnd)return{sum:0,complete:false,hasStart,hasEnd};
+  let diff=fin-ini; if(diff<0)diff+=24*3600;
+  return{sum:diff,complete:true,hasStart,hasEnd};
+}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
 function setSyncDot(s){const d=document.getElementById('syncDot');d.className='sync-dot '+s;}
 function showToast(msg,isErr){const el=document.getElementById('toast');el.textContent=msg;el.style.background=isErr?'#c0392b':'var(--accent)';el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2000);}
@@ -295,29 +381,84 @@ async function sbFetch(path,method='GET',body=null){
 async function loadAll(){
   setSyncDot('busy');
   try{
-    const[ath,tms]=await Promise.all([
+    const[ath,tms,inv]=await Promise.all([
       sbFetch('/rest/v1/athletes?select=*&order=created_at.asc'),
-      sbFetch('/rest/v1/times?select=*')
+      sbFetch('/rest/v1/times?select=*'),
+      sbFetch('/rest/v1/inventory?select=*')
     ]);
     athletes=ath||[];
     timesMap={};
     (tms||[]).forEach(r=>{if(!timesMap[r.athlete_id])timesMap[r.athlete_id]={};timesMap[r.athlete_id][r.station]=r.seconds;});
+    inventory={};
+    (inv||[]).forEach(r=>{inventory[invKey(r.color,r.talla)]=r.stock;});
     setSyncDot('ok');
+    populateHeatSelect(document.getElementById('inHeat'));
+    refreshShirtSelects();
     renderAthleteList();
     renderTimeBlocks();
+    renderInventory();
     updateStats();
   }catch(e){setSyncDot('err');showToast('Error de conexión',true);}
+}
+
+// Descuenta 1 pieza del inventario (descuento simple) y persiste
+async function decrementStock(color,talla){
+  if(!color||!talla)return;
+  const k=invKey(color,talla);
+  const cur=inventory[k]===undefined?0:inventory[k];
+  const next=Math.max(0,cur-1);
+  inventory[k]=next;
+  try{
+    await fetch(SUPABASE_URL+'/rest/v1/inventory?color=eq.'+encodeURIComponent(color)+'&talla=eq.'+encodeURIComponent(talla),{
+      method:'PATCH',headers:HEADERS,body:JSON.stringify({stock:next})
+    });
+  }catch(e){/* el valor local ya quedó; se re-sincroniza en el próximo load */}
+}
+
+// Llena un <select> de tallas para un color dado, deshabilitando agotadas
+function fillSizeSelect(sel,color,currentVal){
+  sel.innerHTML='<option value="">— talla —</option>';
+  SHIRT_SIZES.forEach(sz=>{
+    const stock=invStock(color,sz);
+    // si esta combinación no existe en el catálogo (ej. Negra M), no la muestres
+    if(inventory[invKey(color,sz)]===undefined && sz!==currentVal) return;
+    const o=document.createElement('option');
+    o.value=sz;
+    o.textContent=sz+' ('+stock+')'+(stock<=0?' · agotada':'');
+    if(stock<=0 && sz!==currentVal) o.disabled=true;
+    sel.appendChild(o);
+  });
+}
+
+function refreshShirtSelects(){
+  // Registro individual
+  const c1=document.getElementById('inColor');
+  if(c1 && c1.value) fillSizeSelect(document.getElementById('inTalla'),c1.value,'');
 }
 
 function toggleMixedFields(){
   const isMx=document.getElementById('inCat').value==='MX';
   document.getElementById('grpEquipo').style.display=isMx?'flex':'none';
   document.getElementById('grpNombre2').style.display=isMx?'flex':'none';
+  document.getElementById('grpColor2').style.display=isMx?'flex':'none';
+  document.getElementById('grpTalla2').style.display=isMx?'flex':'none';
+  document.getElementById('lblColor').textContent=isMx?'Color playera 1':'Color playera';
+  document.getElementById('lblTalla').textContent=isMx?'Talla playera 1':'Talla playera';
+  document.getElementById('lblNombre').textContent=isMx?'Primer integrante':'Nombre completo';
+  document.getElementById('grpAlias').style.display='flex';
+  document.getElementById('lblAlias').textContent=isMx?'Alias integrante 1':'Alias / Apodo';
+  document.getElementById('grpAlias2').style.display=isMx?'flex':'none';
 }
 function toggleEditMixedFields(){
   const isMx=document.getElementById('editCat').value==='MX';
   document.getElementById('editGrpEquipo').style.display=isMx?'flex':'none';
   document.getElementById('editGrpNombre2').style.display=isMx?'flex':'none';
+  document.getElementById('editGrpAlias2').style.display=isMx?'flex':'none';
+  document.getElementById('editLblAlias').textContent=isMx?'Alias integrante 1':'Alias';
+  document.getElementById('editGrpColor2').style.display=isMx?'flex':'none';
+  document.getElementById('editGrpTalla2').style.display=isMx?'flex':'none';
+  document.getElementById('editLblColor').textContent=isMx?'Color playera 1':'Color playera';
+  document.getElementById('editLblTalla').textContent=isMx?'Talla playera 1':'Talla playera';
 }
 
 async function registerAthlete(){
@@ -334,31 +475,82 @@ async function registerAthlete(){
     if(!equipo){showToast('Falta el nombre del equipo',true);return;}
     if(!nombre2){showToast('Falta el segundo integrante',true);return;}
   }
+  // Cupo del heat
+  const taken=athletes.filter(a=>a.heat===heat).length;
+  if(taken>=HEAT_CAP){showToast('Ese heat ya está lleno',true);return;}
+
+  // Playeras
+  const color=document.getElementById('inColor').value;
+  const talla=document.getElementById('inTalla').value;
+  if(!color||!talla){showToast('Selecciona color y talla de playera',true);return;}
+  if(invStock(color,talla)<=0){showToast(color+' '+talla+' agotada',true);return;}
+  let color2=null,talla2=null;
+  if(cat==='MX'){
+    color2=document.getElementById('inColor2').value;
+    talla2=document.getElementById('inTalla2').value;
+    if(!color2||!talla2){showToast('Selecciona playera del 2º integrante',true);return;}
+    // Si ambas playeras son la misma combinación, se necesitan 2 en stock
+    if(color===color2&&talla===talla2){
+      if(invStock(color,talla)<2){showToast(color+' '+talla+': solo queda 1',true);return;}
+    }else if(invStock(color2,talla2)<=0){showToast(color2+' '+talla2+' agotada',true);return;}
+  }
+
   const btn=document.getElementById('btnRegister');btn.disabled=true;setSyncDot('busy');
-  const a={id:uid(),nombre,alias:alias||(cat==='MX'?equipo:nombre.split(' ')[0]),heat,cat,
-           nombre2:cat==='MX'?nombre2:null, equipo:cat==='MX'?equipo:null};
+  const alias2=cat==='MX'?document.getElementById('inAlias2').value.trim():'';
+  const a={id:uid(),nombre,alias:alias||(cat==='MX'?(nombre.split(' ')[0]):nombre.split(' ')[0]),heat,cat,
+           nombre2:cat==='MX'?nombre2:null, equipo:cat==='MX'?equipo:null,
+           alias2:cat==='MX'?(alias2||nombre2.split(' ')[0]):null,
+           color,talla, color2:cat==='MX'?color2:null, talla2:cat==='MX'?talla2:null,
+           hora_inicio:null, hora_fin:null};
   try{
     await sbFetch('/rest/v1/athletes','POST',a);
     athletes.push(a);timesMap[a.id]={};
+    // Descuento simple de inventario
+    await decrementStock(color,talla);
+    if(cat==='MX') await decrementStock(color2,talla2);
     document.getElementById('inNombre').value='';document.getElementById('inAlias').value='';
     document.getElementById('inHeat').value='';document.getElementById('inCat').value='';
     document.getElementById('inNombre2').value='';document.getElementById('inEquipo').value='';
+    document.getElementById('inAlias2').value='';
+    document.getElementById('inColor').value='';document.getElementById('inTalla').innerHTML='<option value="">— talla —</option>';
+    document.getElementById('inColor2').value='';document.getElementById('inTalla2').innerHTML='<option value="">— talla —</option>';
     toggleMixedFields();
+    populateHeatSelect(document.getElementById('inHeat'));
     setSyncDot('ok');showToast('✓ '+a.alias+' registrado');
-    renderAthleteList();renderTimeBlocks();updateStats();
+    renderAthleteList();renderTimeBlocks();renderInventory();updateStats();
   }catch(e){setSyncDot('err');showToast('Error al registrar',true);}
   btn.disabled=false;
 }
 
 async function removeAthlete(id){
   if(!confirm('¿Eliminar atleta?'))return;
+  const a=athletes.find(x=>x.id===id);
   setSyncDot('busy');
   try{
     await sbFetch('/rest/v1/athletes?id=eq.'+id,'DELETE');
+    // Devolver playeras al inventario
+    if(a){
+      if(a.color&&a.talla) await incrementStock(a.color,a.talla);
+      if(a.color2&&a.talla2) await incrementStock(a.color2,a.talla2);
+    }
     athletes=athletes.filter(a=>a.id!==id);delete timesMap[id];
     setSyncDot('ok');showToast('Atleta eliminado');
-    renderAthleteList();renderTimeBlocks();updateStats();
+    populateHeatSelect(document.getElementById('inHeat'));
+    renderAthleteList();renderTimeBlocks();renderInventory();updateStats();
   }catch(e){setSyncDot('err');showToast('Error al eliminar',true);}
+}
+
+async function incrementStock(color,talla){
+  if(!color||!talla)return;
+  const k=invKey(color,talla);
+  const cur=inventory[k]===undefined?0:inventory[k];
+  const next=cur+1;
+  inventory[k]=next;
+  try{
+    await fetch(SUPABASE_URL+'/rest/v1/inventory?color=eq.'+encodeURIComponent(color)+'&talla=eq.'+encodeURIComponent(talla),{
+      method:'PATCH',headers:HEADERS,body:JSON.stringify({stock:next})
+    });
+  }catch(e){}
 }
 
 function openEdit(id){
@@ -366,64 +558,124 @@ function openEdit(id){
   editingId=id;
   document.getElementById('editNombre').value=a.nombre;
   document.getElementById('editAlias').value=a.alias;
+  populateHeatSelect(document.getElementById('editHeat'),a.heat);
   document.getElementById('editHeat').value=a.heat;
   document.getElementById('editCat').value=a.cat;
   document.getElementById('editNombre2').value=a.nombre2||'';
+  document.getElementById('editAlias2').value=a.alias2||'';
   document.getElementById('editEquipo').value=a.equipo||'';
+  // Shirt 1
+  document.getElementById('editColor').value=a.color||'';
+  const t1=document.getElementById('editTalla'); t1.dataset.cur=a.talla||'';
+  fillSizeSelect(t1,a.color||'',a.talla||''); t1.value=a.talla||'';
+  // Shirt 2
+  document.getElementById('editColor2').value=a.color2||'';
+  const t2=document.getElementById('editTalla2'); t2.dataset.cur=a.talla2||'';
+  fillSizeSelect(t2,a.color2||'',a.talla2||''); t2.value=a.talla2||'';
   toggleEditMixedFields();
   document.getElementById('editModal').classList.add('open');
 }
 function closeEdit(){editingId=null;document.getElementById('editModal').classList.remove('open');}
 async function saveEdit(){
   if(!editingId)return;
+  const a0=athletes.find(a=>a.id===editingId);
+  // Snapshot del estado previo de playeras ANTES de cualquier mutación
+  const hadColor1=!!(a0&&a0.color), hadColor2=!!(a0&&a0.color2), prevHeat=a0?a0.heat:null;
   const nombre=document.getElementById('editNombre').value.trim();
   const alias=document.getElementById('editAlias').value.trim();
   const heat=document.getElementById('editHeat').value;
   const cat=document.getElementById('editCat').value;
   const nombre2=document.getElementById('editNombre2').value.trim();
+  const alias2=document.getElementById('editAlias2').value.trim();
   const equipo=document.getElementById('editEquipo').value.trim();
+  const color=document.getElementById('editColor').value;
+  const talla=document.getElementById('editTalla').value;
+  const color2=document.getElementById('editColor2').value;
+  const talla2=document.getElementById('editTalla2').value;
   if(!nombre||!heat||!cat){showToast('Completa todos los campos',true);return;}
   if(cat==='MX'&&(!equipo||!nombre2)){showToast('Completa equipo y segundo integrante',true);return;}
+  // Cupo: si cambió de heat, validar que el nuevo no esté lleno (excluyendo a este atleta)
+  if(heat!==prevHeat){
+    const taken=athletes.filter(a=>a.heat===heat && a.id!==editingId).length;
+    if(taken>=HEAT_CAP){showToast('Ese heat ya está lleno',true);return;}
+  }
   setSyncDot('busy');
-  const payload={nombre,alias,heat,cat,nombre2:cat==='MX'?nombre2:null,equipo:cat==='MX'?equipo:null};
+  const payload={nombre,alias,heat,cat,nombre2:cat==='MX'?nombre2:null,equipo:cat==='MX'?equipo:null,
+                 alias2:cat==='MX'?(alias2||null):null,
+                 color:color||null,talla:talla||null,
+                 color2:cat==='MX'?(color2||null):null,talla2:cat==='MX'?(talla2||null):null};
   try{
     await sbFetch('/rest/v1/athletes?id=eq.'+editingId,'PATCH',payload);
+    // Descuento al ASIGNAR playera por primera vez (antes no tenía)
+    if(!hadColor1 && color && talla) await decrementStock(color,talla);
+    if(cat==='MX' && !hadColor2 && color2 && talla2) await decrementStock(color2,talla2);
     const idx=athletes.findIndex(a=>a.id===editingId);
     if(idx>=0)athletes[idx]={...athletes[idx],...payload};
     setSyncDot('ok');showToast('✓ Guardado');closeEdit();
-    renderAthleteList();renderTimeBlocks();
+    populateHeatSelect(document.getElementById('inHeat'));
+    renderAthleteList();renderTimeBlocks();renderInventory();
   }catch(e){setSyncDot('err');showToast('Error al guardar',true);}
 }
 
-function saveTime(aid,idx,wrap){
-  const inputs=wrap.querySelectorAll('.time-field');
-  const sec=toSec(inputs[0].value,inputs[1].value);
-  if(!timesMap[aid])timesMap[aid]={};
-  timesMap[aid][idx]=sec;
+// Guarda hora_inicio u hora_fin (campo: 'hora_inicio' | 'hora_fin')
+function saveClockTime(aid,field,value){
+  const a=athletes.find(x=>x.id===aid); if(!a)return;
+  a[field]=value||null;
   const{sum,complete}=athleteTotal(aid);
   const totalEl=document.getElementById('total-'+aid);
-  if(totalEl){totalEl.textContent=sum>0?fmtTime(sum):'—';totalEl.classList.toggle('complete',complete);}
+  if(totalEl){totalEl.textContent=complete?fmtTime(sum):'—';totalEl.classList.toggle('complete',complete);}
   updateStats();
-  clearTimeout(saveTimers[aid+'_'+idx]);
-  saveTimers[aid+'_'+idx]=setTimeout(async()=>{
+  clearTimeout(saveTimers[aid+'_'+field]);
+  saveTimers[aid+'_'+field]=setTimeout(async()=>{
     setSyncDot('busy');
     try{
-      // Upsert nativo: inserta o actualiza en una sola llamada (sin error 409)
-      const res=await fetch(SUPABASE_URL+'/rest/v1/times',{
-        method:'POST',
-        headers:{...HEADERS,'Prefer':'resolution=merge-duplicates,return=representation'},
-        body:JSON.stringify({athlete_id:aid,station:idx,seconds:sec})
+      const payload={}; payload[field]=value||null;
+      const res=await fetch(SUPABASE_URL+'/rest/v1/athletes?id=eq.'+aid,{
+        method:'PATCH',headers:HEADERS,body:JSON.stringify(payload)
       });
       if(!res.ok)throw new Error(await res.text());
       setSyncDot('ok');
-    }catch(e){setSyncDot('err');showToast('No se guardó el tiempo',true);}
+    }catch(e){setSyncDot('err');showToast('No se guardó la hora',true);}
   },800);
 }
 
 function switchTab(name){
-  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['registro','tiempos'][i]===name));
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['registro','tiempos','inventario'][i]===name));
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
+  if(name==='inventario') renderInventory();
+}
+
+function renderInventory(){
+  const el=document.getElementById('inventoryView');
+  if(!el)return;
+  // Build from catalog combos that exist in inventory
+  const rows=[];
+  SHIRT_COLORS.forEach(color=>{
+    SHIRT_SIZES.forEach(talla=>{
+      const k=invKey(color,talla);
+      if(inventory[k]===undefined)return; // combo no existe (ej. Negra M)
+      rows.push({color,talla,stock:inventory[k]});
+    });
+  });
+  if(!rows.length){el.innerHTML='<div class="empty"><strong>Sin inventario</strong>Carga el catálogo en Supabase.</div>';return;}
+  const total=rows.reduce((s,r)=>s+r.stock,0);
+  el.innerHTML=`<div class="lb-table" style="background:var(--panel);border:1px solid var(--border);border-radius:8px;overflow:hidden">`+
+    rows.map(r=>{
+      const pct=r.stock<=0?'agotada':r.stock;
+      const col=r.color==='Amarilla'?'#f5c542':'#888';
+      const low=r.stock<=2&&r.stock>0, out=r.stock<=0;
+      const valColor=out?'#e63946':(low?'#f5a623':'#4caf50');
+      return`<div style="display:grid;grid-template-columns:14px 1fr auto;align-items:center;gap:0.75rem;padding:0.7rem 1rem;border-bottom:1px solid var(--border)">
+        <span style="width:10px;height:10px;border-radius:50%;background:${col};display:inline-block"></span>
+        <span style="font-size:0.9rem;font-weight:600">${r.color} · Talla ${r.talla}</span>
+        <span style="font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:700;color:${valColor}">${out?'AGOTADA':r.stock+' pzs'}</span>
+      </div>`;
+    }).join('')+
+    `<div style="padding:0.7rem 1rem;display:flex;justify-content:space-between;align-items:center;background:var(--surface)">
+      <span style="font-family:'Barlow Condensed',sans-serif;font-size:0.7rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted)">Total disponible</span>
+      <span style="font-family:'Barlow Condensed',sans-serif;font-size:1.2rem;font-weight:800;color:var(--accent)">${total} pzs</span>
+    </div></div>`;
 }
 
 function displayName(a){
@@ -433,7 +685,9 @@ function displayName(a){
 }
 function displaySub(a){
   if(a.cat==='MX'){
-    const members=[a.nombre, a.nombre2].filter(Boolean).join(' · ');
+    const m1=a.nombre+(a.alias?' ('+a.alias+')':'');
+    const m2=a.nombre2?(a.nombre2+(a.alias2?' ('+a.alias2+')':'')):'';
+    const members=[m1,m2].filter(Boolean).join(' · ');
     return members || a.alias;
   }
   return a.alias;
@@ -468,23 +722,24 @@ function renderTimeBlocks(){
     const hc=heatColor(h.letter);
     html+=`<div class="heat-group-header"><span class="heat-badge" style="background:${hc}22;color:${hc}">${h.label}</span><span class="heat-group-time">${h.time} hrs</span></div>`;
     list.forEach(a=>{
-      const t=timesMap[a.id]||{},{sum,complete}=athleteTotal(a.id);
-      const stations=STATIONS.map((s,i)=>{
-        const sec=t[i]||0,mm=sec>0?String(Math.floor(sec/60)).padStart(2,'0'):'',ss=sec>0?String(sec%60).padStart(2,'0'):'';
-        return`<div class="station-cell"><span class="station-label">${i+1}. ${s}</span><div class="time-input-wrap">
-          <input class="time-field" type="number" min="0" max="99" placeholder="00" value="${mm}" onchange="saveTime('${a.id}',${i},this.parentNode)">
-          <span class="time-sep">:</span>
-          <input class="time-field" type="number" min="0" max="59" placeholder="00" value="${ss}" onchange="saveTime('${a.id}',${i},this.parentNode)">
-        </div></div>`;
-      }).join('');
+      const{sum,complete,hasStart,hasEnd}=athleteTotal(a.id);
+      const ini=a.hora_inicio||'', fin=a.hora_fin||'';
+      const fields=`<div class="station-cell"><span class="station-label">Hora inicio</span>
+          <div class="time-input-wrap">
+            <input class="clock-field" type="time" step="1" value="${ini}" onchange="saveClockTime('${a.id}','hora_inicio',this.value)">
+          </div></div>
+        <div class="station-cell"><span class="station-label">Hora término</span>
+          <div class="time-input-wrap">
+            <input class="clock-field" type="time" step="1" value="${fin}" onchange="saveClockTime('${a.id}','hora_fin',this.value)">
+          </div></div>`;
       html+=`<div class="athlete-block" id="block-${a.id}">
         <div class="athlete-block-header" onclick="toggleBlock('${a.id}')">
           <span class="cat-badge cat-${a.cat}">${catLabel(a.cat)}</span>
           <div style="flex:1"><div class="ab-name">${displayName(a)}</div><div class="ab-alias">${displaySub(a)}</div></div>
-          <span class="total-time ${complete?'complete':''}" id="total-${a.id}">${sum>0?fmtTime(sum):'—'}</span>
+          <span class="total-time ${complete?'complete':''}" id="total-${a.id}">${complete?fmtTime(sum):'—'}</span>
           <span class="chevron">▼</span>
         </div>
-        <div class="station-grid">${stations}</div>
+        <div class="station-grid">${fields}</div>
       </div>`;
     });
   });
