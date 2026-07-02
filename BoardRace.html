@@ -61,6 +61,8 @@
   .podium-name   { font-size: 0.72rem; color: var(--muted); }
   .podium-time   { font-family: 'Barlow Condensed', sans-serif; font-size: 1.5rem; font-weight: 700; color: var(--accent); margin-top: 0.2rem; }
   .podium-heat   { font-family: 'Barlow Condensed', sans-serif; font-size: 0.6rem; font-weight: 700; letter-spacing: 0.1em; padding: 0.15rem 0.4rem; border-radius: 3px; }
+  .podium-start  { font-family: 'Barlow Condensed', sans-serif; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+  .podium-start b { color: var(--text); font-weight: 700; }
 
   /* TABLE */
   .sort-bar { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; }
@@ -124,8 +126,9 @@
 </header>
 
 <div class="cat-tabs">
-  <button class="cat-tab active" onclick="setCat('H',this)">Hombre</button>
+  <button class="cat-tab active" onclick="setCat('ALL',this)">Todos</button>
   <button class="cat-tab" onclick="setCat('M',this)">Mujer</button>
+  <button class="cat-tab" onclick="setCat('H',this)">Hombre</button>
   <button class="cat-tab" onclick="setCat('MX',this)">Mixto</button>
 </div>
 
@@ -150,8 +153,8 @@ const HEATS = Array.from({length:21},(_,i)=>{
 function heatInfo(l){return HEATS.find(h=>h.letter===l)||{label:'H-'+l,time:''};}
 function heatColor(l){const c=['#00b4d8','#7b2fff','#ff9f1c','#e63946','#8ecb7a','#f5c542','#ff64b4','#00c896','#ff4500','#8888ff','#c0c0c0','#ffcc00'];return c[(l.charCodeAt(0)-65)%c.length];}
 function catLabel(c){return c==='H'?'Hombre':c==='M'?'Mujer':'Mixto';}
-function displayName(a){ if(a.cat==='MX') return a.equipo||a.alias||a.nombre; return a.nombre; }
-function displaySub(a){ if(a.cat==='MX'){const m1=a.nombre+(a.alias?' ('+a.alias+')':'');const m2=a.nombre2?(a.nombre2+(a.alias2?' ('+a.alias2+')':'')):'';const m=[m1,m2].filter(Boolean).join(' · ');return m||a.alias;} return a.alias; }
+function displayName(a){ if(a.cat==='MX') return a.equipo||a.alias||a.nombre; return a.alias||a.nombre; }
+function displaySub(a){ if(a.cat==='MX'){const m1=a.nombre+(a.alias?' ('+a.alias+')':'');const m2=a.nombre2?(a.nombre2+(a.alias2?' ('+a.alias2+')':'')):'';const m=[m1,m2].filter(Boolean).join(' · ');return m||a.alias;} return a.nombre; }
 function fmtTime(s){if(!s&&s!==0)return'—';const sign=s<0?'-':'';s=Math.abs(s);const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60;return sign+(h>0?String(h).padStart(2,'0')+':':'')+String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');}
 function clockToSec(str){if(!str)return null;const p=str.trim().split(':').map(x=>parseInt(x,10));if(p.some(isNaN))return null;if(p.length===3)return p[0]*3600+p[1]*60+p[2];if(p.length===2)return p[0]*60+p[1];return null;}
 function hhmm(str){if(!str)return'—';const p=str.split(':');return p.length>=2?p[0].padStart(2,'0')+':'+p[1].padStart(2,'0'):str;}
@@ -162,7 +165,7 @@ function athleteTotal(a){
   return{sum:diff,complete:true};
 }
 
-let currentCat = 'H';
+let currentCat = 'ALL';
 function setCat(val,btn){
   currentCat=val;
   document.querySelectorAll('.cat-tab').forEach(b=>b.classList.remove('active'));
@@ -184,7 +187,7 @@ async function load(){
 
 function render(athletes){
   let pool=athletes.map(a=>({...a,...athleteTotal(a)}));
-  pool=pool.filter(a=>a.cat===currentCat);
+  pool=pool.filter(a=>currentCat==='ALL'?true:a.cat===currentCat);
 
   // Complete (with total) first by time, then incomplete
   pool.sort((a,b)=>{
@@ -213,6 +216,7 @@ function render(athletes){
         <span class="podium-name">${displaySub(r)}</span>
         <span class="podium-heat hb" style="background:${hc}22;color:${hc}">${hi.label} ${hi.time}</span>
         <span class="cb cat-${r.cat}">${catLabel(r.cat)}</span>
+        <span class="podium-start">Salida <b>${hhmm(r.hora_inicio)}</b></span>
         <span class="podium-time">${fmtTime(r.sum)}</span>
       </div>`;
     }).join('');
@@ -222,7 +226,7 @@ function render(athletes){
     <div class="lb-row lb-header">
       <div class="col-header">#</div>
       <div class="col-header left">Atleta</div>
-      <div class="col-header seg">Inicio</div>
+      <div class="col-header seg">Salida</div>
       <div class="col-header seg">Fin</div>
       <div class="col-header right">Total</div>
     </div>`;
